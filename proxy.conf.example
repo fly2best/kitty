@@ -1,0 +1,26 @@
+# my proxy conf
+# fuck gfw
+rules gfw {
+  *google.com*
+  *googleapis.com*
+  *googlcode.com*
+  *googleusercontent.com*
+  *gstatic.com*
+  *sstatic.net*
+}
+
+directforward {
+  example.com:80 -> localhost:8080
+}
+
+
+proxy sock5 {
+  type = sock5
+  host = 127.0.0.1
+  port =  7070
+}
+
+config {
+  gfw -> sock5
+  * -> sock5
+}
