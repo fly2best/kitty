@@ -3,6 +3,7 @@ package proxy
 import (
   "os"
   "bufio"
+  "bytes"
   "strings"
   "fmt"
   "log"
@@ -12,7 +13,7 @@ type ProxyMgr struct {
   RulesList []*Rules
   ProxyList []*Proxy
   ForwardMap DirectForward
-  Config map[string]string
+  Config ProxyConfig
   ProxyConfFile string
 }
 
@@ -120,4 +121,25 @@ func (proxyMgr *ProxyMgr) Match(host string) (proxy *Proxy, matched bool) {
 func (proxyMgr *ProxyMgr) GetDirectForwardAddr(dstAddr string)(forwardAddr string, contained bool) {
   forwardAddr, contained = proxyMgr.ForwardMap[dstAddr]
   return
+}
+
+func (proxyMgr *ProxyMgr) ReInit() error {
+  return proxyMgr.Init(proxyMgr.ProxyConfFile)
+}
+
+func (proxyMgr *ProxyMgr) String() string{
+  var buffer bytes.Buffer
+
+  for _, rules := range proxyMgr.RulesList{
+    fmt.Fprintf(&buffer, "%s\n", rules.String())
+  }
+
+  fmt.Fprintf(&buffer, "%s\n", proxyMgr.ForwardMap.String())
+
+  for _, proxy := range proxyMgr.ProxyList{
+    fmt.Fprintf(&buffer, "%s\n", proxy.String())
+  }
+
+  fmt.Fprintf(&buffer, "%s", proxyMgr.Config.String())
+  return buffer.String()
 }

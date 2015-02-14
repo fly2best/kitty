@@ -4,6 +4,8 @@ import (
   "bufio"
   "strings"
   "strconv"
+  "bytes"
+  "fmt"
   "log"
 )
 
@@ -62,7 +64,29 @@ func (rules *Rules) Match(host string) (bool) {
   return false
 }
 
+func (rules *Rules) String() (str string) {
+  var buffer bytes.Buffer
+
+  fmt.Fprintf(&buffer, "rules %s {\n", rules.Name)
+  for _, rawRule := range rules.rawRules {
+    fmt.Fprintf(&buffer, "  %s\n", rawRule)
+  }
+  fmt.Fprintf(&buffer, "}")
+
+  return buffer.String()
+}
+
 type DirectForward map[string]string
+
+func (df *DirectForward) String() (str string) {
+  var buffer bytes.Buffer
+  fmt.Fprintf(&buffer, "directforward {\n")
+  for key, value := range *df {
+    fmt.Fprintf(&buffer, "  %s -> %s\n", key, value)
+  }
+  fmt.Fprintf(&buffer, "}")
+  return buffer.String()
+}
 
 type Proxy struct {
   Name string
@@ -98,4 +122,26 @@ func (proxy *Proxy) Init(proxyName string, scanner *bufio.Scanner) (err error) {
     }
   }
   return nil
+}
+
+func (proxy *Proxy) String() (str string) {
+  var buffer bytes.Buffer
+  fmt.Fprintf(&buffer, "proxy %s {\n", proxy.Name)
+  fmt.Fprintf(&buffer, "  type = %s\n", proxy.ProxyType)
+  fmt.Fprintf(&buffer, "  host = %s\n", proxy.Host)
+  fmt.Fprintf(&buffer, "  port = %d\n", proxy.Port)
+  fmt.Fprintf(&buffer, "}")
+  return buffer.String()
+}
+
+type ProxyConfig map[string]string
+
+func (config *ProxyConfig ) String() (str string) {
+  var buffer bytes.Buffer
+  fmt.Fprintf(&buffer, "config {\n")
+  for key, value := range *config {
+    fmt.Fprintf(&buffer, "  %s -> %s\n", key, value)
+  }
+  fmt.Fprintf(&buffer, "}")
+  return buffer.String()
 }

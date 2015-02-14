@@ -10,9 +10,11 @@ func TestInitProxyMgr(t *testing.T) {
   proxyMgr := new(ProxyMgr)
   err := proxyMgr.Init("../proxy.conf")
 
+
   if err != nil {
     fmt.Println(err)
   } else {
+    fmt.Printf("%s\n", proxyMgr.String())
     fmt.Printf("%+v\n", proxyMgr)
     fmt.Println(proxyMgr.Match("google.com"))
     fmt.Println(proxyMgr.Match("www.google.com"))
