@@ -8,7 +8,6 @@ import (
 
 const (
   localAddr         = "127.0.0.1:6000"
-  proxyAddr         = "127.0.0.1:7070"
   proxyConfFileName = "proxy.conf"
 )
 
