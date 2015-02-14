@@ -7,6 +7,8 @@ import (
   "strings"
   "fmt"
   "log"
+  "net"
+  "github.com/streamrail/cmap"
 )
 
 type ProxyMgr struct {
@@ -14,7 +16,9 @@ type ProxyMgr struct {
   ProxyList []*Proxy
   ForwardMap DirectForward
   Config ProxyConfig
+
   ProxyConfFile string
+  hostConnMap cmap.ConcurrentMap
 }
 
 func (proxyMgr *ProxyMgr) Init(proxyConfFile string) (err error) {
@@ -98,6 +102,7 @@ func (proxyMgr *ProxyMgr) Init(proxyConfFile string) (err error) {
     proxyMgr.ForwardMap = forwardMap
     proxyMgr.Config = config
     proxyMgr.ProxyConfFile = proxyConfFile
+    proxyMgr.hostConnMap =  cmap.New()
   }
   return
 }
@@ -124,7 +129,30 @@ func (proxyMgr *ProxyMgr) GetDirectForwardAddr(dstAddr string)(forwardAddr strin
 }
 
 func (proxyMgr *ProxyMgr) ReInit() error {
+
+  //close all conn
+  for tuple := range proxyMgr.hostConnMap.Iter() {
+    conn := tuple.Val.(net.Conn)
+    if conn != nil {
+      conn.Close()
+    }
+  }
+
   return proxyMgr.Init(proxyMgr.ProxyConfFile)
+}
+
+func (proxyMgr *ProxyMgr) RegisterConn(host string, conn net.Conn) error {
+  key := fmt.Sprintf("%s%v", host, conn)
+  log.Printf("register conn: %s\n", key)
+  proxyMgr.hostConnMap.Set(key, conn)
+  return nil
+}
+
+func (proxyMgr *ProxyMgr) RemoveConn(host string, conn net.Conn) error {
+  key := fmt.Sprintf("%s%v", host, conn)
+  log.Printf("remove conn: %s\n", key)
+  proxyMgr.hostConnMap.Remove(key)
+  return nil
 }
 
 func (proxyMgr *ProxyMgr) String() string{

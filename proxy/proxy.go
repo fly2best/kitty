@@ -49,7 +49,7 @@ func getRemoteConnByDestAddr(host string, port uint16, proxyMgr *ProxyMgr) (conn
 
   if proxy, matched := proxyMgr.Match(host); matched {
     // sock5 proxy conn
-    log.Printf("connect to host %s by proxy %v", host, proxy)
+    log.Printf("connect to host %s by proxy %v", host, proxy.Name)
     return connectToSock5Proxy(host, port, proxy)
   } else {
     // dircet conn
@@ -78,20 +78,25 @@ func handleConnCmd(conn net.Conn, proxyMgr *ProxyMgr) (err error) {
     go func() {
       defer conn.Close()
       defer remoteConn.Close()
+      proxyMgr.RegisterConn(host, conn)
+      defer proxyMgr.RemoveConn(host, conn)
 
-      io.Copy(conn, remoteConn)
+      n, _ := io.Copy(conn, remoteConn)
+      log.Printf("localhost to %s closed, %d bytes written", host, n)
     }()
 
     go func() {
       defer conn.Close()
       defer remoteConn.Close()
 
-      io.Copy(remoteConn, conn)
+      n, _ := io.Copy(remoteConn, conn)
+      log.Printf("%s to localhost closed, %d bytes written", host, n)
     }()
 
     return nil
   }
 }
+
 
 func handleHandShake(conn net.Conn) (err error) {
   header := make([]byte, 2)
