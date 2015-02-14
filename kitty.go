@@ -12,15 +12,14 @@ const (
 )
 
 func main() {
-
-  if proxyMgr, err := proxy.LoadProxyMgrFromFile(proxyConfFileName); err != nil {
-    log.Fatalf("load proxy conf %s err: %v", proxyConfFileName, err)
+  proxyMgr := new(proxy.ProxyMgr)
+  if err := proxyMgr.Init(proxyConfFileName); err != nil {
+    log.Fatalf("proxy mgr init err: %v", err)
   } else {
     ln, err := net.Listen("tcp", localAddr)
     if err != nil {
       log.Fatalf("listen to %s err: %v", localAddr, err)
     }
-
     for {
       conn, err := ln.Accept()
       if err != nil {

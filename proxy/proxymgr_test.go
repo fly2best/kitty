@@ -7,7 +7,8 @@ import (
 
 func TestInitProxyMgr(t *testing.T) {
 
-  proxyMgr, err := LoadProxyMgrFromFile("../proxy.conf")
+  proxyMgr := new(ProxyMgr)
+  err := proxyMgr.Init("../proxy.conf")
 
   if err != nil {
     fmt.Println(err)

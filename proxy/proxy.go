@@ -179,7 +179,7 @@ func getDestConnAddr(conn net.Conn) (host string, port uint16, err error) {
   return
 }
 
-func connectToSock5Proxy(host string, port uint16, proxy Proxy) (conn net.Conn, err error) {
+func connectToSock5Proxy(host string, port uint16, proxy *Proxy) (conn net.Conn, err error) {
   proxyAddr := proxy.Host + ":" + strconv.Itoa(int(proxy.Port))
   proxyConn, er := net.Dial("tcp", proxyAddr)
   if er != nil {
