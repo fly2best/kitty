@@ -8,7 +8,7 @@ import (
   "fmt"
   "log"
   "net"
-  "github.com/streamrail/cmap"
+  "github.com/streamrail/concurrent-map"
 )
 
 type ProxyMgr struct {
