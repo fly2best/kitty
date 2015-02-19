@@ -39,13 +39,11 @@ func (muxer *Muxer)Write(clientId string, p []byte) (n int, err error) {
 func (muxer *Muxer)Read(clientId string, p []byte) (n int, err error) {
   buf := muxer.outBufMap[clientId]
   // log.Printf("Muxer.Read client:%s, len:%d\n", clientId, buf.Len())
-  if buf.Len() != 0 {
-    return buf.Read(p)
-  } else {
+  if buf.Len() == 0 {
     bytesBuf := <- muxer.outChanMap[clientId]
     buf.Write(bytesBuf)
-    return buf.Read(p)
   }
+  return buf.Read(p)
 }
 
 func (muxer *Muxer)readFromConn() (clientId string, dataBytes []byte, err error) {

@@ -33,17 +33,17 @@ func NewMuxerServer(ioc io.ReadWriteCloser)(muxerServer *MuxerServer, err error)
       clientId, dataBytes, err := muxerServer.readFromConn()
       log.Printf("NewMuxerSerrver receive from %s\n", clientId)
       if err == nil {
-	go func () {
-	  if _, ok := muxerServer.outChanMap[clientId]; !ok {
-	    // open conn  passive
-	    conn, _ := muxerServer.OpenConn(clientId)
-	    go func() {
-	      muxerServer.connChan <- conn
-	    }()
-	  }
-	  ch := muxerServer.outChanMap[clientId]
-	  ch <- dataBytes
-	}()
+	if _, ok := muxerServer.outChanMap[clientId]; !ok {
+	  // open conn  passive
+	  conn, _ := muxerServer.OpenConn(clientId)
+	  log.Printf("NewMuxerSerrver openConn %s\n", clientId)
+	  go func() {
+	    muxerServer.connChan <- conn
+	  }()
+	}
+	//todo: different clientId can be out-of-order, same client should stay in-order
+	ch := muxerServer.outChanMap[clientId]
+	ch <- dataBytes
       }
     }
   }()
