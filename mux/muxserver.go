@@ -1,7 +1,6 @@
 package mux
 
 import (
-  "sync"
   "io"
   "bytes"
   "log"
@@ -9,7 +8,6 @@ import (
 
 type MuxerServer struct {
   Muxer
-  sync.Mutex
   connChan chan *Conn
 }
 

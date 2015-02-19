@@ -1,14 +1,12 @@
 package mux
 
 import (
-  "sync"
   "io"
   "bytes"
 )
 
 type MuxerClient struct {
   Muxer
-  sync.Mutex
 }
 
 func NewMuxerClient(ioc io.ReadWriteCloser)(muxerClient *MuxerClient, err error) {
