@@ -39,7 +39,7 @@ func Sock5serve(conn net.Conn, proxyMgr *ProxyMgr) {
 
 }
 
-func getRemoteConnByDestAddr(host string, port uint16, proxyMgr *ProxyMgr) (conn net.Conn, err error) {
+func getRemoteConnByDestAddr(host string, port uint16, proxyMgr *ProxyMgr) (conn io.ReadWriteCloser, err error) {
 
   dstAddr := host + ":" + strconv.Itoa(int(port))
   if forwardAddr, ok := proxyMgr.GetDirectForwardAddr(dstAddr); ok {
@@ -64,7 +64,7 @@ func handleConnCmd(conn net.Conn, proxyMgr *ProxyMgr) (err error) {
   if err != nil {
     return fmt.Errorf("handleConnCmd connect to %s:%d, error:%v", host, port, err)
   } else {
-    log.Printf("handleConnCmd connectingt to %s:%d", host, port)
+    log.Printf("handleConnCmd connecting to %s:%d", host, port)
   }
 
   if remoteConn, err := getRemoteConnByDestAddr(host, port, proxyMgr); err != nil {
