@@ -31,7 +31,9 @@ func (muxer *Muxer)Write(clientId string, p []byte) (n int, err error) {
   binary.Write(buf, binary.BigEndian, clientIdBytes)
   binary.Write(buf, binary.BigEndian, int32(len(p)))
   binary.Write(buf, binary.BigEndian, p)
+  // log.Printf("Muxer Write client %s msg:%v", clientId, p)
   muxer.inChan <- buf.Bytes()
+  n = len(p)
   return
 }
 
@@ -48,7 +50,7 @@ func (muxer *Muxer)readFromConn() (clientId string, dataBytes []byte, err error)
   var clientIdLen uint32
   err = binary.Read(muxer.conn, binary.BigEndian, &clientIdLen)
   if err != nil {
-    log.Printf("read error %v.\n", err)
+    err = fmt.Errorf("read clientId len error. %v", err)
     return
   }
   log.Printf("readFromConn clientIdLen:%d\n", clientIdLen)
@@ -56,7 +58,7 @@ func (muxer *Muxer)readFromConn() (clientId string, dataBytes []byte, err error)
   clientIdBytes := make([]byte, clientIdLen)
   err = binary.Read(muxer.conn, binary.BigEndian, clientIdBytes)
   if err != nil {
-    log.Printf("read error %v.\n", err)
+    err = fmt.Errorf("read clientId error. %v", err)
     return
   }
 
@@ -66,7 +68,7 @@ func (muxer *Muxer)readFromConn() (clientId string, dataBytes []byte, err error)
   var dataLen uint32
   err = binary.Read(muxer.conn, binary.BigEndian, &dataLen)
   if err != nil {
-    log.Printf("read error %v.\n", err)
+    err = fmt.Errorf("read date len error. %v", err)
     return
   }
   log.Printf("readFromConn dataLen:%d\n", dataLen)
@@ -80,10 +82,10 @@ func (muxer *Muxer)readFromConn() (clientId string, dataBytes []byte, err error)
   dataBytes = make([]byte, dataLen)
   err = binary.Read(muxer.conn, binary.BigEndian, dataBytes)
   if err != nil {
-    log.Printf("read error %v.\n", err)
+    err = fmt.Errorf("read date error. %v", err)
     return
   }
-  log.Printf("readFromConn dataBytes:%s\n", string(dataBytes))
+  // log.Printf("readFromConn %s dataBytes:%v\n", clientId,  dataBytes)
   return
 }
 

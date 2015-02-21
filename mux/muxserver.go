@@ -30,7 +30,7 @@ func NewMuxerServer(ioc io.ReadWriteCloser)(muxerServer *MuxerServer, err error)
   go func () {
     for {
       clientId, dataBytes, err := muxerServer.readFromConn()
-      log.Printf("NewMuxerSerrver receive from %s\n  msg:%s", clientId, string(dataBytes))
+      // log.Printf("NewMuxerSerrver receive from %s\n  msg:%v", clientId, dataBytes)
       if err == nil {
 	if _, ok := muxerServer.outBufMap[clientId]; !ok {
 	  // open conn  passive
@@ -45,6 +45,7 @@ func NewMuxerServer(ioc io.ReadWriteCloser)(muxerServer *MuxerServer, err error)
 	}
       } else {
 	log.Printf("NewMuxerSerrver readFrom conn err %v\n", err)
+	break
       }
     }
   }()

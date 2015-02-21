@@ -8,6 +8,8 @@ import (
   "fmt"
   "log"
   "net"
+  "kitty/mux"
+  "strconv"
   "github.com/streamrail/concurrent-map"
 )
 
@@ -16,6 +18,7 @@ type ProxyMgr struct {
   ProxyList []*Proxy
   ForwardMap DirectForward
   Config ProxyConfig
+  KittyMuxerClientMap map[string]*mux.MuxerClient
 
   ProxyConfFile string
   hostConnMap cmap.ConcurrentMap
@@ -94,6 +97,21 @@ func (proxyMgr *ProxyMgr) Init(proxyConfFile string) (err error) {
     }
   }
 
+  kittyMuxerClientMap := make(map[string]*mux.MuxerClient)
+  for _, proxy := range(proxyList) {
+    if proxy.ProxyType == "kitty" {
+      proxyAddr := proxy.Host + ":" + strconv.Itoa(int(proxy.Port))
+      conn, er := net.Dial("tcp", proxyAddr)
+      if er == nil {
+	if muxerClient, err := mux.NewMuxerClient(conn); err == nil {
+	  kittyMuxerClientMap[proxy.Name] = muxerClient
+	}
+      } else {
+	log.Printf("init connect to kitty proxy error. %v", er)
+      }
+    }
+  }
+
   if er := scanner.Err(); err != nil {
     err = fmt.Errorf("cofig file read error. %v", er)
   } else {
@@ -102,6 +120,8 @@ func (proxyMgr *ProxyMgr) Init(proxyConfFile string) (err error) {
     proxyMgr.ForwardMap = forwardMap
     proxyMgr.Config = config
     proxyMgr.ProxyConfFile = proxyConfFile
+    proxyMgr.KittyMuxerClientMap =  kittyMuxerClientMap
+
     proxyMgr.hostConnMap =  cmap.New()
   }
   return

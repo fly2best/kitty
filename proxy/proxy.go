@@ -7,6 +7,7 @@ import (
   "errors"
   "strconv"
   "log"
+  "sync"
 )
 
 const (
@@ -16,6 +17,9 @@ const (
   atypDomainName = uint8(3)
   atypIPV6 = uint8(4)
 )
+
+var connId = 0
+var connIdLock sync.Mutex
 
 var ErrNotSock5Version = errors.New("not sock5 version")
 var ErrNotSupportdCmd = errors.New("just support conn cmd now")
@@ -48,9 +52,8 @@ func getRemoteConnByDestAddr(host string, port uint16, proxyMgr *ProxyMgr) (conn
   }
 
   if proxy, matched := proxyMgr.Match(host); matched {
-    // sock5 proxy conn
     log.Printf("connect to host %s by proxy %v", host, proxy.Name)
-    return connectToSock5Proxy(host, port, proxy)
+    return connectToSock5Proxy(host, port, proxy, proxyMgr)
   } else {
     // dircet conn
     log.Printf("direct connto to host %s", host)
@@ -81,16 +84,24 @@ func handleConnCmd(conn net.Conn, proxyMgr *ProxyMgr) (err error) {
       proxyMgr.RegisterConn(host, conn)
       defer proxyMgr.RemoveConn(host, conn)
 
-      n, _ := io.Copy(conn, remoteConn)
-      log.Printf("localhost to %s closed, %d bytes written", host, n)
+      n, err := io.Copy(conn, remoteConn)
+      if err == nil {
+	log.Printf("localhost to %s closed, %d bytes written", host, n)
+      } else {
+	log.Printf("copy from localhost to %s err:%v", host, err)
+      }
     }()
 
     go func() {
       defer conn.Close()
       defer remoteConn.Close()
 
-      n, _ := io.Copy(remoteConn, conn)
-      log.Printf("%s to localhost closed, %d bytes written", host, n)
+      n, err := io.Copy(remoteConn, conn)
+      if err == nil {
+	log.Printf("%s to localhost closed, %d bytes written", host, n)
+      } else {
+	log.Printf("copy %s to localhost err: %v", host, err)
+      }
     }()
 
     return nil
@@ -116,9 +127,7 @@ func handleHandShake(conn net.Conn) (err error) {
     return fmt.Errorf("read auth methods err: %v", err)
   }
 
-
   _, err = conn.Write([]byte{sock5Version , 0})
-
   return err
 }
 
@@ -184,11 +193,31 @@ func getDestConnAddr(conn net.Conn) (host string, port uint16, err error) {
   return
 }
 
-func connectToSock5Proxy(host string, port uint16, proxy *Proxy) (conn net.Conn, err error) {
-  proxyAddr := proxy.Host + ":" + strconv.Itoa(int(proxy.Port))
-  proxyConn, er := net.Dial("tcp", proxyAddr)
+func getProxyConn(host string, port uint16, proxy *Proxy, proxyMgr *ProxyMgr) (conn io.ReadWriteCloser, err error) {
+  if proxy.ProxyType == "kitty" {
+    if muxerClient, ok := proxyMgr.KittyMuxerClientMap[proxy.Name]; ok {
+      // localAddr := host + ":" + strconv.Itoa(int(port))
+
+      connIdLock.Lock()
+      currConnid := connId
+      connId = connId + 1
+      connIdLock.Unlock()
+
+      conn, err = muxerClient.OpenConn(strconv.Itoa(currConnid))
+    } else {
+      err = fmt.Errorf("kitty proxy muxerClient is null, %v", proxy)
+    }
+  } else {
+    proxyAddr := proxy.Host + ":" + strconv.Itoa(int(proxy.Port))
+    conn, err = net.Dial("tcp", proxyAddr)
+  }
+  return
+}
+
+func connectToSock5Proxy(host string, port uint16, proxy *Proxy, proxyMgr *ProxyMgr) (conn io.ReadWriteCloser, err error) {
+  proxyConn, er := getProxyConn(host, port, proxy, proxyMgr)
   if er != nil {
-    err = fmt.Errorf("connect to %s error! %v", proxyAddr, er)
+    err = fmt.Errorf("connect to %s error! %v", proxy, er)
     return
   }
 
@@ -197,7 +226,7 @@ func connectToSock5Proxy(host string, port uint16, proxy *Proxy) (conn net.Conn,
   _, er = io.ReadAtLeast(proxyConn, shakeBuf, 2)
 
   if er != nil {
-    err = fmt.Errorf("read from %s error! %v", proxyAddr, er)
+    err = fmt.Errorf("read from %s error! %v", proxy, er)
     return
   }
 
@@ -218,7 +247,7 @@ func connectToSock5Proxy(host string, port uint16, proxy *Proxy) (conn net.Conn,
 
   requestRetBuf := make([]byte, 10)
   if  _, er = io.ReadAtLeast(proxyConn, requestRetBuf, 10); er != nil {
-    err = fmt.Errorf("read from %s error! %v", proxyAddr, er)
+    err = fmt.Errorf("read from %s error! %v", proxy, er)
   }
 
   return proxyConn, nil

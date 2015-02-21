@@ -20,7 +20,10 @@ func NewMuxerClient(ioc io.ReadWriteCloser)(muxerClient *MuxerClient, err error)
   go func (){
     for {
       bytes := <- muxerClient.inChan
-      muxerClient.conn.Write(bytes)
+      _, err := muxerClient.conn.Write(bytes)
+      if err != nil {
+	log.Printf("muxerClient Write to conn error: %v", err)
+      }
     }
   }()
 
@@ -28,13 +31,15 @@ func NewMuxerClient(ioc io.ReadWriteCloser)(muxerClient *MuxerClient, err error)
   go func () {
     for {
       clientId, dataBytes, err := muxerClient.readFromConn()
+      // log.Printf("NewMuxerClient receive from %s\n  msg:%v", clientId, dataBytes)
       if err  == nil {
 	_, err := muxerClient.writeToConnReadBuf(clientId, dataBytes)
 	if  err != nil {
-	  log.Printf("muxerClient writeToConnRead Buf errro, %v", err)
+	  log.Printf("muxerClient writeToConnRead Buf errro: %v", err)
 	}
       } else {
-	log.Printf("MuxerClient read error, %v", err)
+	log.Printf("MuxerClient read error: %v", err)
+	break
       }
     }
   }()
