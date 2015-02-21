@@ -1,8 +1,9 @@
-package mux
+package buf
 
 import (
   "bytes"
   "sync"
+  "io"
 )
 
 //todo: improve buf mem utilization
@@ -37,8 +38,8 @@ func (b *Buffer) Read(p []byte) (n int, err error) {
   if b.buf.Len() != 0 {
     n, err = b.buf.Read(p)
   } else {
-    // b.closed = true
     n = 0
+    err = io.EOF
   }
   return
 }

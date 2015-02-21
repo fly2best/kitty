@@ -1,4 +1,4 @@
-package mux
+package buf
 
 import (
   "testing"
@@ -66,8 +66,8 @@ func TestRWCurrent(t *testing.T) {
     bufferRead := new(bytes.Buffer)
     byteBuf := make([]byte, 100)
     for {
-      n, _ := buffer.Read(byteBuf)
-      if n != 0 {
+      n, err := buffer.Read(byteBuf)
+      if err == nil {
 	bufferRead.Write(byteBuf[0:n])
       } else {
 	break
