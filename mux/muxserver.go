@@ -2,8 +2,8 @@ package mux
 
 import (
   "io"
-  "bytes"
   "log"
+  "kitty/buf"
 )
 
 type MuxerServer struct {
@@ -15,8 +15,7 @@ func NewMuxerServer(ioc io.ReadWriteCloser)(muxerServer *MuxerServer, err error)
   muxerServer = new(MuxerServer)
   muxerServer.conn = ioc
   muxerServer.inChan = make(chan []byte)
-  muxerServer.outChanMap = make(map[string]chan []byte)
-  muxerServer.outBufMap = make(map[string] *bytes.Buffer)
+  muxerServer.outBufMap = make(map[string] *buf.Buffer)
   muxerServer.connChan = make(chan *Conn)
 
   // write
@@ -31,9 +30,9 @@ func NewMuxerServer(ioc io.ReadWriteCloser)(muxerServer *MuxerServer, err error)
   go func () {
     for {
       clientId, dataBytes, err := muxerServer.readFromConn()
-      log.Printf("NewMuxerSerrver receive from %s\n", clientId)
+      log.Printf("NewMuxerSerrver receive from %s\n  msg:%s", clientId, string(dataBytes))
       if err == nil {
-	if _, ok := muxerServer.outChanMap[clientId]; !ok {
+	if _, ok := muxerServer.outBufMap[clientId]; !ok {
 	  // open conn  passive
 	  conn, _ := muxerServer.OpenConn(clientId)
 	  log.Printf("NewMuxerSerrver openConn %s\n", clientId)
@@ -41,9 +40,11 @@ func NewMuxerServer(ioc io.ReadWriteCloser)(muxerServer *MuxerServer, err error)
 	    muxerServer.connChan <- conn
 	  }()
 	}
-	//todo: different clientId can be out-of-order, same client should stay in-order
-	ch := muxerServer.outChanMap[clientId]
-	ch <- dataBytes
+	if _, err = muxerServer.writeToConnReadBuf(clientId, dataBytes); err != nil{
+	  log.Printf("NewMuxerSerrver writeToConnReadBuf error %s\n", err)
+	}
+      } else {
+	log.Printf("NewMuxerSerrver readFrom conn err %v\n", err)
       }
     }
   }()

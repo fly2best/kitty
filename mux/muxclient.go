@@ -2,7 +2,8 @@ package mux
 
 import (
   "io"
-  "bytes"
+  "log"
+  "kitty/buf"
 )
 
 type MuxerClient struct {
@@ -13,8 +14,7 @@ func NewMuxerClient(ioc io.ReadWriteCloser)(muxerClient *MuxerClient, err error)
   muxerClient = new(MuxerClient)
   muxerClient.conn = ioc
   muxerClient.inChan = make(chan []byte)
-  muxerClient.outChanMap = make(map[string]chan []byte)
-  muxerClient.outBufMap = make(map[string] *bytes.Buffer)
+  muxerClient.outBufMap = make(map[string] *buf.Buffer)
 
   // write
   go func (){
@@ -28,12 +28,13 @@ func NewMuxerClient(ioc io.ReadWriteCloser)(muxerClient *MuxerClient, err error)
   go func () {
     for {
       clientId, dataBytes, err := muxerClient.readFromConn()
-      if err == nil {
-	go func () {
-	  if ch, ok := muxerClient.outChanMap[clientId]; ok {
-	    ch <-dataBytes
-	  }
-	}()
+      if err  == nil {
+	_, err := muxerClient.writeToConnReadBuf(clientId, dataBytes)
+	if  err != nil {
+	  log.Printf("muxerClient writeToConnRead Buf errro, %v", err)
+	}
+      } else {
+	log.Printf("MuxerClient read error, %v", err)
       }
     }
   }()
