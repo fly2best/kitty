@@ -11,6 +11,9 @@ import (
   "kitty/mux"
   "strconv"
   "github.com/streamrail/concurrent-map"
+  "crypto/tls"
+  "crypto/x509"
+  "io/ioutil"
 )
 
 type ProxyMgr struct {
@@ -100,8 +103,19 @@ func (proxyMgr *ProxyMgr) Init(proxyConfFile string) (err error) {
   kittyMuxerClientMap := make(map[string]*mux.MuxerClient)
   for _, proxy := range(proxyList) {
     if proxy.ProxyType == "kitty" {
+
+      cert_b, _ := ioutil.ReadFile(proxy.CaFile)
+      priv_b, _ := ioutil.ReadFile(proxy.KeyFile)
+      priv, _ := x509.ParsePKCS1PrivateKey(priv_b)
+
+      cert := tls.Certificate{
+	Certificate: [][]byte{ cert_b },
+	PrivateKey: priv,
+      }
+      config := tls.Config{Certificates: []tls.Certificate{cert}, InsecureSkipVerify: true}
+
       proxyAddr := proxy.Host + ":" + strconv.Itoa(int(proxy.Port))
-      conn, er := net.Dial("tcp", proxyAddr)
+      conn, er := tls.Dial("tcp", proxyAddr, &config)
       if er == nil {
 	if muxerClient, err := mux.NewMuxerClient(conn); err == nil {
 	  kittyMuxerClientMap[proxy.Name] = muxerClient

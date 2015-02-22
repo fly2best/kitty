@@ -5,16 +5,42 @@ import (
   "net"
   "io"
   "kitty/mux"
+  "crypto/rand"
+  "crypto/tls"
+  "crypto/x509"
+  "io/ioutil"
 )
 
 const (
   muxerAddr = "127.0.0.1:7000"
   sock5Addr = "127.0.0.1:7070"
+  caFile = "./conf/server.ca.pem"
+  keyFile = "./conf/server.ca.key"
 )
 
 func main() {
 
-  l, err := net.Listen("tcp", muxerAddr)
+  ca_b, _ := ioutil.ReadFile(caFile)
+  ca, _ := x509.ParseCertificate(ca_b)
+  priv_b, _ := ioutil.ReadFile(keyFile)
+  priv, _ := x509.ParsePKCS1PrivateKey(priv_b)
+
+  pool := x509.NewCertPool()
+  pool.AddCert(ca)
+
+  cert := tls.Certificate{
+    Certificate: [][]byte{ ca_b },
+    PrivateKey: priv,
+  }
+
+  config := tls.Config{
+    ClientAuth: tls.RequireAndVerifyClientCert,
+    Certificates: []tls.Certificate{cert},
+    ClientCAs: pool,
+  }
+  config.Rand = rand.Reader
+
+  l, err := tls.Listen("tcp", muxerAddr, &config)
   if err != nil {
     log.Println("Error listening:", err.Error())
     return

@@ -93,6 +93,8 @@ type Proxy struct {
   ProxyType string
   Host string
   Port uint16
+  CaFile string
+  KeyFile string
 }
 
 func (proxy *Proxy) Init(proxyName string, scanner *bufio.Scanner) (err error) {
@@ -116,6 +118,10 @@ func (proxy *Proxy) Init(proxyName string, scanner *bufio.Scanner) (err error) {
 	if port, err := strconv.Atoi(fileds[2]); err == nil {
 	  proxy.Port = uint16(port)
 	}
+      } else if fileds[0] == "caFile" {
+	proxy.CaFile = fileds[2]
+      } else if fileds[0] == "keyFile" {
+	proxy.KeyFile = fileds[2]
       }
     } else {
       break
@@ -130,6 +136,8 @@ func (proxy *Proxy) String() (str string) {
   fmt.Fprintf(&buffer, "  type = %s\n", proxy.ProxyType)
   fmt.Fprintf(&buffer, "  host = %s\n", proxy.Host)
   fmt.Fprintf(&buffer, "  port = %d\n", proxy.Port)
+  fmt.Fprintf(&buffer, "  caFile = %s\n", proxy.CaFile)
+  fmt.Fprintf(&buffer, "  keyFile = %s\n", proxy.KeyFile)
   fmt.Fprintf(&buffer, "}")
   return buffer.String()
 }
