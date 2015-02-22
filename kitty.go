@@ -10,7 +10,7 @@ import (
 const (
   localAddr = "127.0.0.1:6000"
   htppMgrAddr = "127.0.0.1:6001"
-  proxyConfFileName = "proxy.conf"
+  proxyConfFileName = "./conf/proxy.conf"
 )
 
 func main() {
