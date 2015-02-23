@@ -12,8 +12,8 @@ import (
 )
 
 const (
-  muxerAddr = "127.0.0.1:7000"
-  sock5Addr = "127.0.0.1:7070"
+  muxerAddr = ":7000"
+  sock5Addr = "127.0.0.1:1080"
   caFile = "./conf/server.ca.pem"
   keyFile = "./conf/server.ca.key"
 )
