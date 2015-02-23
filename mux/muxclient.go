@@ -20,10 +20,14 @@ func NewMuxerClient(ioc io.ReadWriteCloser)(muxerClient *MuxerClient, err error)
   go func (){
     for {
       bytes := <- muxerClient.inChan
-      _, err := muxerClient.conn.Write(bytes)
+      n, err := muxerClient.conn.Write(bytes)
       if err != nil {
 	log.Printf("muxerClient Write to conn error: %v", err)
       }
+      if n != len(bytes) {
+	log.Printf("muxerClient Write to conn error. %d != %d", n, len(bytes))
+      }
+      log.Printf("muxerClient Write to conn done, %d bytes write", n)
     }
   }()
 

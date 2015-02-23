@@ -31,8 +31,13 @@ func (muxer *Muxer)Write(clientId string, p []byte) (n int, err error) {
   binary.Write(buf, binary.BigEndian, clientIdBytes)
   binary.Write(buf, binary.BigEndian, int32(len(p)))
   binary.Write(buf, binary.BigEndian, p)
-  // log.Printf("Muxer Write client %s msg:%v", clientId, p)
+  if len(p) < 15 {
+    log.Printf("Muxer Write start. client %s msg:%v", clientId, p)
+  }
   muxer.inChan <- buf.Bytes()
+  if len(p) < 15 {
+    log.Printf("Muxer Write done. client %s  msg:%v done", clientId, p)
+  }
   n = len(p)
   return
 }
@@ -75,7 +80,6 @@ func (muxer *Muxer)readFromConn() (clientId string, dataBytes []byte, err error)
 
   if dataLen == 0 {
     muxer.CloseLocalConn(clientId)
-    err = io.EOF
     return
   }
 

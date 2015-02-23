@@ -78,6 +78,8 @@ func handleConnCmd(conn net.Conn, proxyMgr *ProxyMgr) (err error) {
     cmdRet := []byte{5, 0, 0, 1, 0, 0, 0, 0, 3, 3}
     conn.Write(cmdRet)
 
+    log.Printf("handleConnCmd start to copy, local:%v, remote:%v", conn, remoteConn)
+
     go func() {
       defer conn.Close()
       defer remoteConn.Close()
@@ -202,8 +204,8 @@ func getProxyConn(host string, port uint16, proxy *Proxy, proxyMgr *ProxyMgr) (c
       currConnid := connId
       connId = connId + 1
       connIdLock.Unlock()
-
       conn, err = muxerClient.OpenConn(strconv.Itoa(currConnid))
+      log.Printf("open kitty proxy conn %s for host: %s", conn, host)
     } else {
       err = fmt.Errorf("kitty proxy muxerClient is null, %v", proxy)
     }
@@ -222,6 +224,7 @@ func connectToSock5Proxy(host string, port uint16, proxy *Proxy, proxyMgr *Proxy
   }
 
   proxyConn.Write([]byte{sock5Version, 0x01, 0x00})
+  log.Printf("conn %v write handshake, waiting hanshake over", proxyConn)
   shakeBuf := make([]byte, 2)
   _, er = io.ReadAtLeast(proxyConn, shakeBuf, 2)
 
@@ -245,10 +248,14 @@ func connectToSock5Proxy(host string, port uint16, proxy *Proxy, proxyMgr *Proxy
   portBytes := []byte{uint8(port>> 8), uint8(port)}
   proxyConn.Write(portBytes)
 
+  log.Printf("conn %v write conn cmd, waiting return", proxyConn)
+
   requestRetBuf := make([]byte, 10)
   if  _, er = io.ReadAtLeast(proxyConn, requestRetBuf, 10); er != nil {
     err = fmt.Errorf("read from %s error! %v", proxy, er)
   }
+
+  log.Printf("conn %v conn cmd result return", proxyConn)
 
   return proxyConn, nil
 }
